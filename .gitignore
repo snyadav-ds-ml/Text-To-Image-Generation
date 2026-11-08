@@ -1,0 +1,25 @@
+# large files — store on Google Drive or HPC
+data/
+outputs/
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+
+# experiment tracking
+wandb/
+
+# OS
+.DS_Store
+
+# notebooks
+.ipynb_checkpoints/
+
+
+# Claude
+CLAUDE.md
+
+# Outline
+Text-to-Image & Video Generation with Diffusion Models — Project Outline.md
