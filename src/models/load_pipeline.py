@@ -7,6 +7,7 @@ def load_pipeline(model_id, lora_path=None, device="cuda"):
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id,
         torch_dtype=torch.float16,                             # halves GPU memory
+        low_cpu_mem_usage=True,                                # stream weights, don't load all at once
     )
 
     pipe.scheduler = DPMSolverMultistepScheduler.from_config(
