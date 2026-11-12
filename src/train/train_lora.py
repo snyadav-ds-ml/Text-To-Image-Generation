@@ -31,9 +31,9 @@ from src.utils.logging import log_metrics                  # save metrics to CSV
 def load_models(model_id):
     """Load all frozen SD v1.5 components."""
     tokenizer    = CLIPTokenizer.from_pretrained(model_id, subfolder="tokenizer")
-    text_encoder = CLIPTextModel.from_pretrained(model_id, subfolder="text_encoder")
-    vae          = AutoencoderKL.from_pretrained(model_id, subfolder="vae")
-    unet         = UNet2DConditionModel.from_pretrained(model_id, subfolder="unet")
+    text_encoder = CLIPTextModel.from_pretrained(model_id, subfolder="text_encoder", low_cpu_mem_usage=True)
+    vae          = AutoencoderKL.from_pretrained(model_id, subfolder="vae", low_cpu_mem_usage=True)
+    unet         = UNet2DConditionModel.from_pretrained(model_id, subfolder="unet", low_cpu_mem_usage=True)
     scheduler    = DDPMScheduler.from_pretrained(model_id, subfolder="scheduler")
     return tokenizer, text_encoder, vae, unet, scheduler
 
@@ -79,6 +79,7 @@ def train(cfg):
     # --- optimizer (only LoRA params) ---
     trainable_params = [p for p in unet.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(trainable_params, lr=cfg["training"]["learning_rate"])
+    scaler = torch.cuda.amp.GradScaler()                       # prevents NaN gradients in fp16
 
     # --- dataset + dataloader ---
     dataset = FlowersDataset(
@@ -125,17 +126,19 @@ def train(cfg):
             with torch.no_grad():
                 text_embeddings = encode_text(tokenizer, text_encoder, captions, device)
 
-            # step 5: U-Net predicts noise
-            noise_pred = unet(noisy_latents, t, encoder_hidden_states=text_embeddings).sample
+            # step 5: U-Net predicts noise (inside autocast for stable fp16)
+            with torch.cuda.amp.autocast():
+                noise_pred = unet(noisy_latents, t, encoder_hidden_states=text_embeddings).sample
+                loss = F.mse_loss(noise_pred.float(), noise.float())
+                loss = loss / grad_accum                        # scale for accumulation
 
-            # step 6: MSE loss between real noise and predicted noise
-            loss = F.mse_loss(noise_pred.float(), noise.float())
-            loss = loss / grad_accum                            # scale for accumulation
-            loss.backward()
+            # step 6: backward with scaler to prevent NaN gradients
+            scaler.scale(loss).backward()
 
             # step 7: update weights every grad_accum steps
             if (step + 1) % grad_accum == 0:
-                optimizer.step()
+                scaler.step(optimizer)                         # unscale + step
+                scaler.update()                                # update scale factor
                 optimizer.zero_grad()
 
             step += 1
