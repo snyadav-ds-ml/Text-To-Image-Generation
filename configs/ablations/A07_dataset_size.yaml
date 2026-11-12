@@ -1,0 +1,4 @@
+run_name: "A07_dataset_size"
+# OPTIONAL — only run if time allows
+# Needs 3 extra training runs with different dataset sizes
+# Values to test: 10%, 25%, 50%, 100% of train split

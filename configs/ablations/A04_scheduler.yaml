@@ -1,0 +1,8 @@
+run_name: "A04_scheduler"
+# Run once per scheduler below — change scheduler + steps each time
+# Schedulers to test: ddim, euler, dpm_solver_pp, pndm (at 10 and 30 steps)
+# Special: lcm_lora at 4 steps (needs LCM-LoRA weights loaded separately)
+
+generation:
+  scheduler: "dpm_solver_pp"   # change to: ddim, euler, pndm, lcm_lora
+  num_inference_steps: 30       # use 10 and 30 for each scheduler; 4 for lcm_lora

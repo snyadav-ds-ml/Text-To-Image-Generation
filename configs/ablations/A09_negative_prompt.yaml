@@ -1,0 +1,7 @@
+run_name: "A09_negative_prompt"
+# No retraining needed — just change negative_prompt
+# Run twice: once with empty, once with the negative prompt below
+
+generation:
+  negative_prompt: "blurry, low quality, deformed, watermark, bad anatomy, ugly"
+  # change to "" for the baseline (no negative prompt) run

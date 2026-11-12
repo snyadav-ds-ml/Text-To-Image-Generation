@@ -1,0 +1,5 @@
+run_name: "A01_baseline_vs_lora"
+# Run twice:
+#   Baseline: python scripts/run_ablation.py --config configs/ablations/A01_baseline_vs_lora.yaml
+#   LoRA:     python scripts/run_ablation.py --config configs/ablations/A01_baseline_vs_lora.yaml --lora_path outputs/checkpoints/main_lora_r16/final
+# No setting changes — difference is lora_path only

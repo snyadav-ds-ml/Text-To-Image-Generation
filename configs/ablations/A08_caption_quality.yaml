@@ -1,0 +1,4 @@
+run_name: "A08_caption_quality"
+# OPTIONAL — only run if time allows
+# Compares BLIP auto-captions (current) vs human-written captions
+# Needs 1 extra training run with human captions if source is found

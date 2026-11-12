@@ -1,0 +1,6 @@
+run_name: "A06_training_steps"
+# No retraining needed — uses checkpoints saved during main run
+# Run once per checkpoint:
+#   python scripts/run_ablation.py --config configs/ablations/A06_training_steps.yaml \
+#       --lora_path outputs/checkpoints/main_lora_r16/step_500
+# Checkpoints to test: step_500, step_1000, step_2000, step_5000

@@ -1,0 +1,8 @@
+run_name: "A05_lora_rank"
+# Needs 3 extra training runs (rank 16 already done as main run)
+# Change lora_rank + lora_alpha together, then retrain
+# Values to test: 4, 8, 16 (done), 32
+
+training:
+  lora_rank: 16    # change to: 4, 8, 32
+  lora_alpha: 16   # keep equal to lora_rank

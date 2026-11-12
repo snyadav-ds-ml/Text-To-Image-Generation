@@ -1,0 +1,6 @@
+run_name: "A03_sampling_steps"
+# Run once per value below — change num_inference_steps each time
+# Values to test: 10, 20, 30, 50, 100
+
+generation:
+  num_inference_steps: 30   # change this to each value above

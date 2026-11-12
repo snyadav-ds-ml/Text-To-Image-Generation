@@ -39,6 +39,19 @@
  fid_kid.py                 ← computes FID + KID between generated and real test images
  clip_score.py              ← computes CLIP Score (prompt-image cosine similarity x 100)
  timing.py                  ← measures average seconds per image on current GPU
+
+ configs/ablations/
+ ├── A01_baseline_vs_lora.yaml   ← pretrained SD v1.5 vs our LoRA (core result)
+ ├── A02_guidance_scale.yaml     ← test guidance scale 1,3,5,7.5,10,15
+ ├── A03_sampling_steps.yaml     ← test steps 10,20,30,50,100
+ ├── A04_scheduler.yaml          ← test DDIM, Euler, DPM-Solver++, PNDM, LCM-LoRA
+ ├── A05_lora_rank.yaml          ← test LoRA rank 4,8,16,32 (needs retraining)
+ ├── A06_training_steps.yaml     ← evaluate checkpoints at 500,1k,2k,5k steps
+ ├── A07_dataset_size.yaml       ← OPTIONAL: test 10%,25%,50%,100% of data
+ ├── A08_caption_quality.yaml    ← OPTIONAL: BLIP captions vs human captions
+ ├── A09_negative_prompt.yaml    ← none vs "blurry, low quality, deformed..."
+ ├── A10_video.yaml              ← SKIPPED: video deferred
+ └── A11_architectures.yaml      ← SD v1.5 vs SD v1.5+LoRA vs SDXL vs FLUX
 ```
 
 ---
@@ -56,6 +69,7 @@
 | `src/data/prepare_dataset.py` | One-time script: resizes images to 512x512, cleans captions, writes metadata.jsonl and split files |
 | `scripts/run_ablation.py` | Runs one ablation end-to-end: generate → FID/KID → CLIP Score → timing → save CSV row |
 | `data/prompts/test_prompts.txt` | 200 fixed flower prompts used for every ablation evaluation |
+| `scripts/setup_env.sh` | Sets up conda or venv environment and installs requirements |
 | `.gitignore` | Excludes data/, outputs/, and Python artifacts from git |
 | `src/data/generate_captions.py` | Runs BLIP on all 8,189 images to generate text captions, saves one .txt per image |
 | `src/models/load_pipeline.py` | Loads SD v1.5 from Hugging Face with DPM-Solver++ scheduler and optional LoRA weights |
