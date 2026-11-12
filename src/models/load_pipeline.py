@@ -15,7 +15,7 @@ def load_pipeline(model_id, lora_path=None, device="cuda"):
     )
 
     if lora_path:
-        pipe.unet.load_attn_procs(lora_path)                   # attach LoRA weights
+        pipe.load_lora_weights(lora_path)                      # load PEFT-saved LoRA weights
 
     pipe = pipe.to(device)                                     # move to GPU
     pipe.enable_attention_slicing()                            # saves GPU memory

@@ -84,6 +84,7 @@ def train(cfg):
     dataset = FlowersDataset(
         "data/processed/metadata.jsonl",
         resolution=cfg["data"]["resolution"],
+        split="train",                                     # never train on val/test
     )
     dataloader = DataLoader(
         dataset,

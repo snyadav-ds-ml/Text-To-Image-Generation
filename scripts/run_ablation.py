@@ -58,13 +58,26 @@ def run(cfg, lora_path):
         print(f"  {k}: {v}")
 
 
+def load_config(ablation_path):
+    """Merge base.yaml with ablation config — ablation values override base."""
+    with open("configs/base.yaml") as f:
+        cfg = yaml.safe_load(f)
+    with open(ablation_path) as f:
+        ablation = yaml.safe_load(f)
+    # deep merge: ablation overrides base at the key level
+    for section, values in ablation.items():
+        if isinstance(values, dict) and section in cfg:
+            cfg[section].update(values)
+        else:
+            cfg[section] = values
+    return cfg
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config",    required=True)      # ablation config yaml
     parser.add_argument("--lora_path", default=None)       # None = baseline (no LoRA)
     args = parser.parse_args()
 
-    with open(args.config) as f:
-        cfg = yaml.safe_load(f)
-
+    cfg = load_config(args.config)
     run(cfg, args.lora_path)

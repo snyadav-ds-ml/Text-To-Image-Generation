@@ -41,8 +41,8 @@ def compute(images_dir, prompts_file):
             img_feat = model.encode_image(image)
             txt_feat = model.encode_text(text)
 
-            img_feat = img_feat / img_feat.norm()   # normalize to unit vector
-            txt_feat = txt_feat / txt_feat.norm()   # normalize to unit vector
+            img_feat = img_feat / img_feat.norm(dim=-1, keepdim=True)   # normalize row vector
+            txt_feat = txt_feat / txt_feat.norm(dim=-1, keepdim=True)   # normalize row vector
 
             score = (img_feat @ txt_feat.T).item()  # cosine similarity
             scores.append(score)
