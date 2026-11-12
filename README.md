@@ -227,15 +227,17 @@ Output:
 ```
 data/processed/
 ├── images/
-│   ├── train/     ← ~6,500 images
-│   ├── val/       ← ~800 images
-│   └── test/      ← ~800 images (used as real images for FID)
+│   ├── train/     ← ~1,020 images  (Oxford official: 10 per species × 102 species)
+│   ├── val/       ← ~1,020 images  (Oxford official: 10 per species × 102 species)
+│   └── test/      ← ~6,149 images  (used as real images for FID — largest split)
 └── metadata.jsonl ← one JSON object per image
 data/splits/
 ├── train.txt
 ├── val.txt
 └── test.txt
 ```
+
+> Note: Oxford-102 uses an unconventional split where the **test set is the largest** (~6,149 images). Training uses only ~1,020 images. This is the standard benchmark split used in published papers.
 
 ---
 
@@ -392,7 +394,7 @@ python scripts/run_ablation.py \
 | A01 | No | None — run twice (with/without lora_path) | See above |
 | A02 | No | Edit `guidance_scale` (1,3,5,7.5,10,15) | `run_ablation.py --config configs/ablations/A02_guidance_scale.yaml` |
 | A03 | No | Edit `num_inference_steps` (10,20,30,50,100) | `run_ablation.py --config configs/ablations/A03_sampling_steps.yaml` |
-| A04 | No | Edit `scheduler` (ddim, euler, dpm_solver_pp, pndm) | `run_ablation.py --config configs/ablations/A04_scheduler.yaml` |
+| A04 | No | Edit `scheduler` in A04 config (`ddim`, `euler`, `dpm_solver_pp`, `pndm`) + edit `num_inference_steps` | `run_ablation.py --config configs/ablations/A04_scheduler.yaml` |
 | A05 | Yes (3 extra runs) | Edit `lora_rank` (4,8,32) + retrain | `train_lora.py` then `run_ablation.py` |
 | A06 | No | Pass different checkpoint as `lora_path` | `run_ablation.py --lora_path outputs/checkpoints/.../step_500` |
 | A07 | Yes (optional) | Edit dataset size in prepare_dataset.py | Optional |

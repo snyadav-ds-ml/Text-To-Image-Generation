@@ -76,9 +76,17 @@ def train(cfg):
     text_encoder.to(device, dtype=dtype)
     unet.to(device, dtype=dtype)
 
+    # --- gradient checkpointing (trades speed for memory) ---
+    if cfg["training"].get("gradient_checkpointing"):
+        unet.enable_gradient_checkpointing()
+
     # --- optimizer (only LoRA params) ---
     trainable_params = [p for p in unet.parameters() if p.requires_grad]
-    optimizer = torch.optim.AdamW(trainable_params, lr=cfg["training"]["learning_rate"])
+    if cfg["training"].get("use_8bit_adam"):
+        import bitsandbytes as bnb                             # 8-bit saves ~4GB optimizer memory
+        optimizer = bnb.optim.AdamW8bit(trainable_params, lr=cfg["training"]["learning_rate"])
+    else:
+        optimizer = torch.optim.AdamW(trainable_params, lr=cfg["training"]["learning_rate"])
     scaler = torch.cuda.amp.GradScaler()                       # prevents NaN gradients in fp16
 
     # --- dataset + dataloader ---

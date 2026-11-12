@@ -22,7 +22,11 @@ from src.utils.seed import set_seed               # fixed seeds per image
 def generate(cfg, lora_path, out_dir):
     os.makedirs(out_dir, exist_ok=True)
 
-    pipe = load_pipeline(cfg["model"]["base"], lora_path)
+    pipe = load_pipeline(
+        cfg["model"]["base"],
+        lora_path,
+        scheduler=cfg["generation"].get("scheduler", "dpm_solver_pp"),  # supports A04
+    )
 
     with open(cfg["data"]["prompts_file"]) as f:
         prompts = [line.strip() for line in f if line.strip()]  # read prompts

@@ -1,23 +1,35 @@
-import torch                                                    # tensor dtype
-from diffusers import StableDiffusionPipeline                  # SD v1.5 pipeline
-from diffusers import DPMSolverMultistepScheduler              # default sampler
+import torch
+from diffusers import (
+    StableDiffusionPipeline,
+    DPMSolverMultistepScheduler,   # dpm_solver_pp
+    DDIMScheduler,                 # ddim
+    EulerDiscreteScheduler,        # euler
+    PNDMScheduler,                 # pndm
+)
+
+SCHEDULERS = {
+    "dpm_solver_pp": DPMSolverMultistepScheduler,
+    "ddim":          DDIMScheduler,
+    "euler":         EulerDiscreteScheduler,
+    "pndm":          PNDMScheduler,
+}
 
 
-def load_pipeline(model_id, lora_path=None, device="cuda"):
+def load_pipeline(model_id, lora_path=None, device="cuda", scheduler="dpm_solver_pp"):
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id,
-        torch_dtype=torch.float16,                             # halves GPU memory
+        torch_dtype=torch.float16,
         low_cpu_mem_usage=True,                                # stream weights, don't load all at once
     )
 
-    pipe.scheduler = DPMSolverMultistepScheduler.from_config(
-        pipe.scheduler.config                                  # swap in DPM-Solver++
-    )
+    # swap scheduler based on config (supports A04 ablation)
+    scheduler_class = SCHEDULERS.get(scheduler, DPMSolverMultistepScheduler)
+    pipe.scheduler = scheduler_class.from_config(pipe.scheduler.config)
 
     if lora_path:
         pipe.load_lora_weights(lora_path)                      # load PEFT-saved LoRA weights
 
-    pipe = pipe.to(device)                                     # move to GPU
+    pipe = pipe.to(device)
     pipe.enable_attention_slicing()                            # saves GPU memory
 
     return pipe
