@@ -160,10 +160,23 @@ def train(cfg):
     print(f"\nTraining complete. Final weights: {final_path}")
 
 
+def load_config(config_path):
+    """Merge base.yaml with training config — training config overrides base."""
+    with open("configs/base.yaml") as f:
+        cfg = yaml.safe_load(f)
+    with open(config_path) as f:
+        overrides = yaml.safe_load(f)
+    for section, values in overrides.items():
+        if isinstance(values, dict) and section in cfg:
+            cfg[section].update(values)
+        else:
+            cfg[section] = values
+    return cfg
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)         # path to yaml config
     args = parser.parse_args()
-    with open(args.config) as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_config(args.config)
     train(cfg)

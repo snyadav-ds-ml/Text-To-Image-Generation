@@ -28,13 +28,18 @@ def compute(images_dir, prompts_file):
         prompts = [line.strip() for line in f if line.strip()]
 
     image_files = sorted(
-        os.path.join(images_dir, f)
-        for f in os.listdir(images_dir) if f.endswith(".png")
+        f for f in os.listdir(images_dir) if f.endswith(".png")
     )
 
     scores = []
     with torch.no_grad():
-        for img_path, prompt in tqdm(zip(image_files, prompts), total=len(prompts), desc="CLIP Score"):
+        for filename in tqdm(image_files, desc="CLIP Score"):
+            # filename format: s{seed:02d}_p{prompt_idx:04d}.png
+            # extract prompt index from filename to get the matching prompt
+            prompt_idx = int(filename.split("_p")[1].replace(".png", ""))
+            prompt = prompts[prompt_idx]
+
+            img_path = os.path.join(images_dir, filename)
             image = preprocess(Image.open(img_path)).unsqueeze(0)  # (1, 3, 224, 224)
             text  = tokenizer([prompt])                             # (1, 77)
 
@@ -47,7 +52,7 @@ def compute(images_dir, prompts_file):
             score = (img_feat @ txt_feat.T).item()  # cosine similarity
             scores.append(score)
 
-    return sum(scores) / len(scores) * 100          # scale to 0-100
+    return sum(scores) / len(scores) * 100          # scale to 0-100 — averaged over all 1000 images
 
 
 if __name__ == "__main__":
