@@ -70,11 +70,12 @@ def train(cfg):
     vae.requires_grad_(False)                              # VAE stays frozen
     text_encoder.requires_grad_(False)                     # CLIP stays frozen
 
-    # move to device in fp16
-    dtype = torch.float16 if cfg["training"]["mixed_precision"] == "fp16" else torch.float32
-    vae.to(device, dtype=dtype)
-    text_encoder.to(device, dtype=dtype)
-    unet.to(device, dtype=dtype)
+    # VAE and text encoder run in fp16 (frozen, no gradients needed)
+    # U-Net stays in fp32 — GradScaler requires fp32 parameters to unscale gradients
+    use_fp16 = cfg["training"]["mixed_precision"] == "fp16" and device == "cuda"
+    vae.to(device, dtype=torch.float16 if use_fp16 else torch.float32)
+    text_encoder.to(device, dtype=torch.float16 if use_fp16 else torch.float32)
+    unet.to(device)                                            # always fp32 for GradScaler
 
     # --- gradient checkpointing (trades speed for memory) ---
     if cfg["training"].get("gradient_checkpointing"):
@@ -87,7 +88,7 @@ def train(cfg):
         optimizer = bnb.optim.AdamW8bit(trainable_params, lr=cfg["training"]["learning_rate"])
     else:
         optimizer = torch.optim.AdamW(trainable_params, lr=cfg["training"]["learning_rate"])
-    scaler = torch.cuda.amp.GradScaler()                       # prevents NaN gradients in fp16
+    scaler = torch.amp.GradScaler("cuda") if use_fp16 else None  # only needed for fp16
 
     # --- dataset + dataloader ---
     dataset = FlowersDataset(
@@ -115,7 +116,7 @@ def train(cfg):
             if step >= max_steps:
                 break
 
-            images = images.to(device, dtype=dtype)
+            images = images.to(device, dtype=torch.float16 if use_fp16 else torch.float32)
 
             # step 1: encode image to latent
             with torch.no_grad():
@@ -128,25 +129,35 @@ def train(cfg):
                               (latents.shape[0],), device=device).long()
 
             # step 3: create noisy latent z_t
+            # cast to fp32 to match U-Net weights
+            latents = latents.float()
+            noise   = noise.float()
             noisy_latents = scheduler.add_noise(latents, noise, t)
 
             # step 4: encode captions
             with torch.no_grad():
                 text_embeddings = encode_text(tokenizer, text_encoder, captions, device)
 
-            # step 5: U-Net predicts noise (inside autocast for stable fp16)
-            with torch.cuda.amp.autocast():
+            # step 5: U-Net predicts noise
+            # autocast runs forward in fp16 for speed; U-Net params stay fp32 for GradScaler
+            with torch.amp.autocast("cuda", enabled=use_fp16):
                 noise_pred = unet(noisy_latents, t, encoder_hidden_states=text_embeddings).sample
                 loss = F.mse_loss(noise_pred.float(), noise.float())
                 loss = loss / grad_accum                        # scale for accumulation
 
-            # step 6: backward with scaler to prevent NaN gradients
-            scaler.scale(loss).backward()
+            # step 6: backward
+            if scaler:
+                scaler.scale(loss).backward()
+            else:
+                loss.backward()
 
             # step 7: update weights every grad_accum steps
             if (step + 1) % grad_accum == 0:
-                scaler.step(optimizer)                         # unscale + step
-                scaler.update()                                # update scale factor
+                if scaler:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
                 optimizer.zero_grad()
 
             step += 1
