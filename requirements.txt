@@ -1,9 +1,9 @@
 torch>=2.0.0          # neural network engine
 torchvision>=0.15.0   # image transforms
-diffusers>=0.27.0     # SD v1.5 pipeline
-transformers>=4.38.0  # CLIP text encoder
-accelerate>=0.27.0    # fp16 + multi-GPU
-peft==0.9.0           # LoRA adapters (pin to avoid torchao conflict)
+diffusers==0.27.2     # SD v1.5 pipeline (pinned for peft compatibility)
+transformers==4.38.0  # CLIP text encoder
+accelerate==0.27.0    # fp16 + multi-GPU
+peft==0.9.0           # LoRA adapters (pinned for diffusers compatibility)
 clean-fid>=0.1.35     # FID and KID metrics
 open-clip-torch>=2.24.0  # CLIP score eval
 bitsandbytes>=0.42.0  # 8-bit Adam optimizer
