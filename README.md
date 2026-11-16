@@ -14,7 +14,6 @@ Fine-tuning Stable Diffusion v1.5 with LoRA on the Oxford-102 Flowers dataset. M
 6. [Inference / Image Generation](#6-inference--image-generation)
 7. [Evaluation](#7-evaluation)
 8. [Running Ablations](#8-running-ablations)
-9. [Running on HPC](#9-running-on-hpc)
 
 ---
 
@@ -411,104 +410,6 @@ Each ablation writes a row to `results/metrics/<run_name>.csv`:
 run_name | fid   | kid    | clip_score | secs_per_image
 A02_cfg1   48.3    0.0821   22.1         3.2
 A02_cfg7.5 24.8    0.0412   31.6         3.2
-```
-
----
-
-## 9. Running on HPC (Quartz)
-
-### Copy code to HPC
-
-```bash
-# on your local machine
-cd /Users/snehayadav/Desktop/Self-Projects/Computer_Vision
-zip -r final_project.zip final_project/ \
-    --exclude "*/data/raw/jpg/*" \
-    --exclude "*/data/raw/*.tgz" \
-    --exclude "*/__pycache__/*" \
-    --exclude "*/.DS_Store"
-
-scp final_project.zip snyadav@quartz.uits.iu.edu:~/
-```
-
-### Set up on HPC
-
-```bash
-# SSH in
-ssh snyadav@quartz.uits.iu.edu
-
-# unzip
-cd ~
-unzip final_project.zip
-cd final_project
-
-# load GPU Python
-module load python/gpu/3.10.10
-
-# create venv
-python3 -m venv t2i
-source t2i/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-### Request an interactive GPU session
-
-```bash
-srun --partition=h100-interactive --gres=gpu:1 --mem=32G --time=04:00:00 --pty bash
-```
-
-Once on the GPU node:
-```bash
-module load python/gpu/3.10.10
-source ~/final_project/t2i/bin/activate
-cd ~/final_project
-nvidia-smi   # verify GPU is visible
-```
-
-### Run the full pipeline on HPC
-
-```bash
-# Step 1: generate captions (needs GPU for speed)
-python src/data/generate_captions.py
-
-# Step 2: prepare dataset
-python src/data/prepare_dataset.py
-
-# Step 3: train LoRA (use h100-single partition for long jobs)
-srun --partition=h100-single --gres=gpu:1 --mem=32G --time=24:00:00 --pty bash
-python src/train/train_lora.py --config configs/train_lora_r16.yaml
-
-# Step 4: generate baseline images
-python src/generate/generate_images.py \
-    --config configs/base.yaml \
-    --out_dir outputs/images/baseline
-
-# Step 5: generate LoRA images
-python src/generate/generate_images.py \
-    --config configs/base.yaml \
-    --lora_path outputs/checkpoints/main_lora_r16/final \
-    --out_dir outputs/images/lora_r16
-
-# Step 6: run all ablations
-python scripts/run_ablation.py --config configs/ablations/A02_guidance_scale.yaml
-# repeat for each ablation config
-```
-
-### Keep jobs running after SSH disconnect
-
-Use `tmux` so your job survives if the SSH session drops:
-
-```bash
-tmux new -s train          # start a new session named "train"
-# run your command inside tmux
-python src/train/train_lora.py --config configs/train_lora_r16.yaml
-
-# detach without killing the job
-Ctrl+B then D
-
-# reattach later
-tmux attach -t train
 ```
 
 ---
