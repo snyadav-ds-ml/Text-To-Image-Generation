@@ -8,8 +8,11 @@ Run:
       --images outputs/images/lora_r16 \
       --prompts data/prompts/test_prompts.txt
 """
-import argparse
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+import argparse
 import torch
 import open_clip                                   # CLIP model
 from PIL import Image

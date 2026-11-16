@@ -14,8 +14,11 @@ Usage:
       --config configs/ablations/A01_baseline_vs_lora.yaml \
       --lora_path outputs/checkpoints/main_lora_r16/final
 """
-import argparse
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import argparse
 import yaml
 from src.generate.generate_images import generate          # image generation
 from src.evaluate.fid_kid import compute as compute_fid    # FID + KID

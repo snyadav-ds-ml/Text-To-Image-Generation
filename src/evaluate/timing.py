@@ -5,6 +5,10 @@ Run:
   python src/evaluate/timing.py --model_id runwayml/stable-diffusion-v1-5 \
       --lora_path outputs/checkpoints/main_lora_r16/final
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import argparse
 import time
 import torch

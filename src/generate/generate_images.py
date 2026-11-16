@@ -11,8 +11,11 @@ Run:
       --lora_path outputs/checkpoints/main_lora_r16/final \
       --out_dir outputs/images/lora_r16
 """
-import argparse
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+import argparse
 import yaml
 from tqdm import tqdm                              # progress bar
 from src.models.load_pipeline import load_pipeline # load SD v1.5

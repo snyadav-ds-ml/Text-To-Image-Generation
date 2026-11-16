@@ -5,6 +5,10 @@ Run:
       --generated outputs/images/lora_r16 \
       --real data/processed/images/test
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import argparse
 from cleanfid import fid                           # FID and KID computation
 
