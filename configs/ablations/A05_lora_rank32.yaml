@@ -1,0 +1,6 @@
+run_name: "A05_lora_rank32"
+
+training:
+  lora_rank: 32
+  lora_alpha: 32
+  max_train_steps: 2000
