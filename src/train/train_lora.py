@@ -13,8 +13,11 @@ Training step (repeats max_train_steps times):
   7. Loss = MSE(ε, ε_pred)
   8. Backpropagate → update LoRA weights only
 """
-import argparse
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+import argparse
 import yaml
 import torch
 import torch.nn.functional as F                            # MSE loss
