@@ -6,6 +6,7 @@ accelerate>=0.30.0    # fp16 + multi-GPU
 peft>=0.14.0          # LoRA adapters
 torchao>=0.16.0       # required by peft>=0.14.0
 clean-fid>=0.1.35     # FID and KID metrics
+scipy<1.14.0          # pin to avoid sqrtm API break in clean-fid
 open-clip-torch>=2.24.0  # CLIP score eval
 bitsandbytes>=0.42.0  # 8-bit Adam optimizer
 matplotlib>=3.8.0     # plots and grids
