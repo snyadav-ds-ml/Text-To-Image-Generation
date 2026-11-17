@@ -45,13 +45,14 @@
  timing.py                  ← measures average seconds per image on current GPU
           │
           ▼
- run_A02_guidance.sh        ← loops guidance scale 1,3,5,7.5,10,15 → saves metrics CSV
- run_A03_steps.sh           ← loops sampling steps 10,20,30,50,100 → saves metrics CSV
- run_A04_scheduler.sh       ← loops schedulers at 10+30 steps each → saves metrics CSV
- run_A09_negative.sh        ← runs with/without negative prompt → saves metrics CSV
+ run_all_ablations.sh       ← ONE COMMAND runs all ablations A01-A06, A09, A11 end-to-end
+          │  (internally calls run_A02_guidance.sh, run_A03_steps.sh,
+          │   run_A04_scheduler.sh, run_A09_negative.sh + inline A01,A05,A06,A11)
           │
           ▼
  results/metrics/           ← one CSV per ablation with FID, KID, CLIP Score, timing
+ results/figures/           ← plots (FID vs guidance scale, etc.)   ← not built yet
+ results/grids/             ← image grids for report                ← not built yet
 
  Training runs completed:
  ├── main_lora_r16           ← rank 16, 2000 steps  ✅
@@ -87,6 +88,7 @@
 | `src/data/dataset.py` | PyTorch Dataset that loads (image tensor, caption) pairs from metadata.jsonl |
 | `src/data/prepare_dataset.py` | One-time script: resizes images to 512x512, cleans captions, writes metadata.jsonl and split files |
 | `scripts/run_ablation.py` | Runs one ablation end-to-end: generate → FID/KID → CLIP Score → timing → save CSV row |
+| `scripts/run_all_ablations.sh` | Master script — runs ALL ablations (A01-A06, A09, A11) with one command. Run overnight. |
 | `scripts/run_A02_guidance.sh` | Loops through guidance scale values 1,3,5,7.5,10,15 and runs full ablation for each |
 | `scripts/run_A03_steps.sh` | Loops through sampling steps 10,20,30,50,100 and runs full ablation for each |
 | `scripts/run_A04_scheduler.sh` | Loops through schedulers (ddim,euler,dpm_solver_pp,pndm) at 10 and 30 steps each |
