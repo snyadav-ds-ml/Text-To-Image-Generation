@@ -1,6 +1,6 @@
 import torch
 from diffusers import (
-    StableDiffusionPipeline,
+    AutoPipelineForText2Image,     # auto-detects SD v1.5 vs SDXL vs others
     DPMSolverMultistepScheduler,   # dpm_solver_pp
     DDIMScheduler,                 # ddim
     EulerDiscreteScheduler,        # euler
@@ -16,10 +16,10 @@ SCHEDULERS = {
 
 
 def load_pipeline(model_id, lora_path=None, device="cuda", scheduler="dpm_solver_pp"):
-    pipe = StableDiffusionPipeline.from_pretrained(
+    pipe = AutoPipelineForText2Image.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
-        low_cpu_mem_usage=True,                                # stream weights, don't load all at once
+        low_cpu_mem_usage=True,                                # works for SD v1.5, SDXL, and others
     )
 
     # swap scheduler based on config (supports A04 ablation)

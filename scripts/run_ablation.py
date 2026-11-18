@@ -48,7 +48,11 @@ def run(cfg, lora_path):
 
     # step 4: timing
     print(f"\n--- [{run_name}] Measuring timing ---")
-    scores["secs_per_image"] = measure_timing(cfg["model"]["base"], lora_path)
+    scores["secs_per_image"] = measure_timing(
+        cfg["model"]["base"],
+        lora_path,
+        num_inference_steps=cfg["generation"]["num_inference_steps"],  # use same steps as generation
+    )
 
     # step 5: save metrics
     scores["run_name"] = run_name

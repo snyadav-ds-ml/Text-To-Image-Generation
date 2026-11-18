@@ -1,6 +1,6 @@
 # large files — store on Google Drive or HPC
-data/
-outputs/
+/data/
+/outputs/
 
 # Python
 __pycache__/

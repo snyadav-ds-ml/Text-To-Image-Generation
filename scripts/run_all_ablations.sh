@@ -123,22 +123,9 @@ bash scripts/run_A09_negative.sh $GPU $LORA
 # ---------------------------------------------------------------------------
 echo ""
 echo "===== A11: Architecture comparison — SDXL zero-shot ====="
-OUT=outputs/images/A11_sdxl
-
-cat > /tmp/A11_sdxl.yaml << EOF
-run_name: "A11_sdxl"
-model:
-  base: "stabilityai/stable-diffusion-xl-base-1.0"
-EOF
-
-CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/generate/generate_images.py \
-    --config /tmp/A11_sdxl.yaml \
-    --out_dir $OUT
-
-CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/fid_kid.py \
-    --generated $OUT --real $REAL_TEST
-CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/clip_score.py \
-    --images $OUT --prompts $PROMPTS
+# use run_ablation.py so base.yaml is merged and all config keys are present
+CUDA_VISIBLE_DEVICES=$GPU $PYTHON scripts/run_ablation.py \
+    --config configs/ablations/A11_architectures.yaml
 
 # ---------------------------------------------------------------------------
 # Done
