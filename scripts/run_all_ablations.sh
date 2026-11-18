@@ -13,6 +13,12 @@ LORA=outputs/checkpoints/main_lora_r16/final
 REAL_TEST=data/processed/images/test
 PROMPTS=data/prompts/test_prompts.txt
 
+# helper: skip an ablation if its metrics CSV already exists
+done_already() {
+    [ -f "results/metrics/${1}.csv" ] && echo "  Skipping $1 — already done." && return 0
+    return 1
+}
+
 echo ""
 echo "=========================================="
 echo " Running all ablations on GPU $GPU"
@@ -40,21 +46,21 @@ CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/clip_score.py \
 # ---------------------------------------------------------------------------
 echo ""
 echo "===== A02: Guidance scale ====="
-bash scripts/run_A02_guidance.sh $GPU $LORA
+done_already "A02_cfg15" || bash scripts/run_A02_guidance.sh $GPU $LORA
 
 # ---------------------------------------------------------------------------
 # A03 — Sampling steps
 # ---------------------------------------------------------------------------
 echo ""
 echo "===== A03: Sampling steps ====="
-bash scripts/run_A03_steps.sh $GPU $LORA
+done_already "A03_steps100" || bash scripts/run_A03_steps.sh $GPU $LORA
 
 # ---------------------------------------------------------------------------
 # A04 — Scheduler
 # ---------------------------------------------------------------------------
 echo ""
 echo "===== A04: Scheduler ====="
-bash scripts/run_A04_scheduler.sh $GPU $LORA
+done_already "A04_pndm_30steps" || bash scripts/run_A04_scheduler.sh $GPU $LORA
 
 # ---------------------------------------------------------------------------
 # A05 — LoRA rank (generate + evaluate each rank)
@@ -116,7 +122,7 @@ echo "===== A08: Skipped (caption quality — no human captions available) =====
 # ---------------------------------------------------------------------------
 echo ""
 echo "===== A09: Negative prompt ====="
-bash scripts/run_A09_negative.sh $GPU $LORA
+done_already "A09_with_negative_prompt" || bash scripts/run_A09_negative.sh $GPU $LORA
 
 # ---------------------------------------------------------------------------
 # A11 — Architecture comparison (SD v1.5 baseline + LoRA already done)
