@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-# Runs all ablations end-to-end: A01 → A02 → A03 → A04 → A05 → A06 → A09 → A11
+# Runs all 8 ablations end-to-end: A01 → A02 → A03 → A04 → A05 → A06 → A07 → A08
+# A01: baseline vs lora
+# A02: guidance scale
+# A03: sampling steps
+# A04: scheduler
+# A05: lora rank
+# A06: training steps
+# A07: negative prompt
+# A08: architecture comparison (SDXL)
 # Usage: bash scripts/run_all_ablations.sh <gpu_id>
-# Example: bash scripts/run_all_ablations.sh 4
 
 set -e
 
@@ -20,14 +27,14 @@ done() {
 }
 
 echo "=========================================="
-echo " Running ablations A01 → A11 on GPU $GPU"
+echo " Running ablations A01 → A08 on GPU $GPU"
 echo "=========================================="
 
 # ---------------------------------------------------------------------------
 # A01 — Baseline vs LoRA
 # ---------------------------------------------------------------------------
 echo ""
-echo "===== A01: Baseline (no LoRA) ====="
+echo "===== A01: Baseline vs LoRA ====="
 done "A01_baseline" || (
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/fid_kid.py \
         --generated outputs/images/baseline --real $REAL_TEST --run_name A01_baseline
@@ -35,8 +42,6 @@ done "A01_baseline" || (
         --images outputs/images/baseline --prompts $PROMPTS --run_name A01_baseline
 )
 
-echo ""
-echo "===== A01: LoRA fine-tuned ====="
 done "A01_lora_r16" || (
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/fid_kid.py \
         --generated outputs/images/lora_r16 --real $REAL_TEST --run_name A01_lora_r16
@@ -83,11 +88,9 @@ for RANK in 4 8 16 32; do
 
     OUT=outputs/images/A05_rank${RANK}
 
-    echo "  Generating rank $RANK..."
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/generate/generate_images.py \
         --config configs/base.yaml --lora_path $CKPT --out_dir $OUT
 
-    echo "  Evaluating rank $RANK..."
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/fid_kid.py \
         --generated $OUT --real $REAL_TEST --run_name A05_lora_rank${RANK}
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/clip_score.py \
@@ -105,11 +108,9 @@ for STEP in 500 1000 2000; do
     CKPT=outputs/checkpoints/main_lora_r16/step_${STEP}
     OUT=outputs/images/A06_step${STEP}
 
-    echo "  Generating step $STEP..."
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/generate/generate_images.py \
         --config configs/base.yaml --lora_path $CKPT --out_dir $OUT
 
-    echo "  Evaluating step $STEP..."
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/fid_kid.py \
         --generated $OUT --real $REAL_TEST --run_name A06_step${STEP}
     CUDA_VISIBLE_DEVICES=$GPU $PYTHON src/evaluate/clip_score.py \
@@ -117,21 +118,22 @@ for STEP in 500 1000 2000; do
 done
 
 # ---------------------------------------------------------------------------
-# A09 — Negative prompt
+# A07 — Negative prompt
 # ---------------------------------------------------------------------------
 echo ""
-echo "===== A09: Negative prompt ====="
-done "A09_" || bash scripts/run_A09_negative.sh $GPU $LORA
+echo "===== A07: Negative prompt ====="
+done "A07_" || bash scripts/run_A07_negative.sh $GPU $LORA
 
 # ---------------------------------------------------------------------------
-# A11 — Architecture comparison (SDXL zero-shot)
+# A08 — Architecture comparison (SDXL zero-shot)
 # ---------------------------------------------------------------------------
 echo ""
-echo "===== A11: SDXL zero-shot ====="
-done "A11_" || CUDA_VISIBLE_DEVICES=$GPU $PYTHON scripts/run_ablation.py \
-    --config configs/ablations/A11_architectures.yaml
+echo "===== A08: Architecture comparison ====="
+done "A08_" || CUDA_VISIBLE_DEVICES=$GPU $PYTHON scripts/run_ablation.py \
+    --config configs/ablations/A08_architectures.yaml
 
 echo ""
 echo "=========================================="
-echo " All done. Results in results/metrics/"
+echo " All 8 ablations complete."
+echo " Results in results/metrics/"
 echo "=========================================="

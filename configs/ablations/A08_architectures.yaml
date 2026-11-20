@@ -1,0 +1,13 @@
+run_name: "A08_architectures"
+# Compares architectures zero-shot (no fine-tuning except our LoRA)
+# Models to test:
+#   1. SD v1.5 pretrained        (no lora_path)
+#   2. SD v1.5 + our LoRA        (--lora_path outputs/checkpoints/main_lora_r16/final)
+#   3. SDXL                      (change model.base below, needs 24GB+ GPU)
+#   4. FLUX.1-schnell             (change model.base below, needs 24GB+ GPU)
+# Note: SDXL and FLUX need H100 — use h100-single partition on Quartz
+
+model:
+  base: "runwayml/stable-diffusion-v1-5"   # change to test other architectures:
+                                            # "stabilityai/stable-diffusion-xl-base-1.0"
+                                            # "black-forest-labs/FLUX.1-schnell"
