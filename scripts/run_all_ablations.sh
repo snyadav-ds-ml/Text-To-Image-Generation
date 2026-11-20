@@ -73,8 +73,12 @@ done_already "A04_" || bash scripts/run_A04_scheduler.sh $GPU $LORA
 echo ""
 echo "===== A05: LoRA rank ====="
 for RANK in 4 8 16 32; do
+    done_already "A05_lora_rank${RANK}" && continue
+
     if [ "$RANK" == "16" ]; then
-        CKPT=$LORA  # rank 16 is the main run
+        CKPT=$LORA
+    elif [ "$RANK" == "4" ]; then
+        CKPT=outputs/checkpoints/A05_lora_rank/final   # rank 4 saved without suffix
     else
         CKPT=outputs/checkpoints/A05_lora_rank${RANK}/final
     fi
@@ -100,6 +104,8 @@ done
 echo ""
 echo "===== A06: Training steps ====="
 for STEP in 500 1000 2000; do
+    done_already "A06_step${STEP}" && continue
+
     CKPT=outputs/checkpoints/main_lora_r16/step_${STEP}
     OUT=outputs/images/A06_step${STEP}
 
@@ -134,8 +140,7 @@ done_already "A09_" || bash scripts/run_A09_negative.sh $GPU $LORA
 # ---------------------------------------------------------------------------
 echo ""
 echo "===== A11: Architecture comparison — SDXL zero-shot ====="
-# use run_ablation.py so base.yaml is merged and all config keys are present
-CUDA_VISIBLE_DEVICES=$GPU $PYTHON scripts/run_ablation.py \
+done_already "A11_" || CUDA_VISIBLE_DEVICES=$GPU $PYTHON scripts/run_ablation.py \
     --config configs/ablations/A11_architectures.yaml
 
 # ---------------------------------------------------------------------------
