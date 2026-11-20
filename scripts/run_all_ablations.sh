@@ -78,7 +78,7 @@ for RANK in 4 8 16 32; do
     if [ "$RANK" == "16" ]; then
         CKPT=$LORA
     elif [ "$RANK" == "4" ]; then
-        CKPT=outputs/checkpoints/A05_lora_rank/final   # rank 4 saved without suffix
+        CKPT=outputs/checkpoints/A05_lora_rank4/final
     else
         CKPT=outputs/checkpoints/A05_lora_rank${RANK}/final
     fi
