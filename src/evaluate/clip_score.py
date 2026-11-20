@@ -60,9 +60,15 @@ def compute(images_dir, prompts_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--images",  required=True)    # folder of generated images
-    parser.add_argument("--prompts", required=True)    # matching prompts file
+    parser.add_argument("--images",   required=True)
+    parser.add_argument("--prompts",  required=True)
+    parser.add_argument("--run_name", default=None)    # if set, saves CSV to results/metrics/
     args = parser.parse_args()
 
     score = compute(args.images, args.prompts)
     print(f"CLIP Score: {score:.2f}   (higher is better)")
+
+    if args.run_name:
+        from src.utils.logging import log_metrics
+        log_metrics(args.run_name, {"clip_score": score}, log_dir="results/metrics")
+        print(f"Saved to results/metrics/{args.run_name}.csv")

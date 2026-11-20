@@ -25,10 +25,16 @@ def compute(generated_dir, real_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--generated", required=True)      # folder of generated images
-    parser.add_argument("--real",      required=True)      # folder of real test images
+    parser.add_argument("--generated", required=True)
+    parser.add_argument("--real",      required=True)
+    parser.add_argument("--run_name",  default=None)       # if set, saves CSV to results/metrics/
     args = parser.parse_args()
 
     scores = compute(args.generated, args.real)
     print(f"FID : {scores['fid']:.2f}   (lower is better)")
     print(f"KID : {scores['kid']:.4f}   (lower is better)")
+
+    if args.run_name:
+        from src.utils.logging import log_metrics
+        log_metrics(args.run_name, scores, log_dir="results/metrics")
+        print(f"Saved to results/metrics/{args.run_name}.csv")
