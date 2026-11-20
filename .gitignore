@@ -1,5 +1,7 @@
 # large files — store on Google Drive or HPC
-/data/
+/data/raw/
+/data/processed/
+/data/splits/
 /outputs/
 
 # Python
