@@ -170,7 +170,7 @@ def train(cfg):
             # save checkpoint
             if step % cfg["training"]["checkpointing_steps"] == 0:
                 ckpt_path = os.path.join(checkpoint_dir, f"step_{step}")
-                unet.save_attn_procs(ckpt_path)                # saves in diffusers format for load_lora_weights()
+                unet.save_pretrained(ckpt_path)                # saves PEFT format (adapter_model.safetensors)
                 print(f"\nCheckpoint saved: {ckpt_path}")
                 log_metrics(cfg.get("run_name", "run"), {"step": step, "loss": loss.item()})
 
@@ -178,7 +178,7 @@ def train(cfg):
 
     # save final weights
     final_path = os.path.join(checkpoint_dir, "final")
-    unet.save_attn_procs(final_path)                           # diffusers format, compatible with pipe.load_lora_weights()
+    unet.save_pretrained(final_path)                           # PEFT format, loaded via PeftModel.from_pretrained()
     print(f"\nTraining complete. Final weights: {final_path}")
 
 
