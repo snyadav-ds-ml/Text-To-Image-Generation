@@ -1,6 +1,6 @@
 # Text-to-Image Generation with Diffusion Models
 
-Fine-tuning Stable Diffusion v1.5 with LoRA on the Oxford-102 Flowers dataset. Measures improvement over the pretrained model using FID, KID, and CLIP Score across 11 ablation studies.
+Fine-tuning Stable Diffusion v1.5 with LoRA on the Oxford-102 Flowers dataset. Measures improvement over the pretrained model using FID, KID, and CLIP Score across 8 ablation studies.
 
 ---
 
@@ -42,7 +42,7 @@ Raw Images + Captions
   Evaluation               fid_kid.py + clip_score.py + timing.py
         │
         ▼
-  Ablation Studies         run_ablation.py (A01–A11)
+  Ablation Studies         run_all_ablations.sh (A01–A08)
 ```
 
 **Model Architecture:**
@@ -64,7 +64,15 @@ final_project/
 ├── configs/
 │   ├── base.yaml                   # shared defaults for all experiments
 │   ├── train_lora_r16.yaml         # main training config
-│   └── ablations/                  # one YAML per ablation (A01–A11)
+│   └── ablations/                  # one YAML per ablation (A01–A08)
+│       ├── A01_baseline_vs_lora.yaml
+│       ├── A02_guidance_scale.yaml
+│       ├── A03_sampling_steps.yaml
+│       ├── A04_scheduler.yaml
+│       ├── A05_lora_rank.yaml
+│       ├── A06_training_steps.yaml
+│       ├── A07_negative_prompt.yaml  (was A09)
+│       └── A08_architectures.yaml   (was A11)
 ├── data/
 │   ├── raw/                        # downloaded images + .mat files (not in git)
 │   ├── processed/                  # 512×512 images + metadata.jsonl (not in git)
@@ -77,7 +85,7 @@ final_project/
 │   │   ├── prepare_dataset.py      # resize, crop, write metadata.jsonl
 │   │   └── dataset.py              # PyTorch Dataset
 │   ├── models/
-│   │   ├── load_pipeline.py        # load SD v1.5 + optional LoRA
+│   │   ├── load_pipeline.py        # load SD v1.5 / SDXL + optional LoRA
 │   │   └── lora.py                 # attach LoRA adapters to U-Net
 │   ├── train/
 │   │   └── train_lora.py           # training loop
@@ -92,8 +100,13 @@ final_project/
 │       ├── logging.py              # write metrics to CSV
 │       └── image_grid.py           # arrange images into a grid
 ├── scripts/
-│   ├── run_ablation.py             # end-to-end ablation runner
-│   └── setup_env.sh                # environment setup script
+│   ├── run_all_ablations.sh        # runs all 8 ablations with skip logic
+│   ├── run_ablation.py             # single ablation runner
+│   ├── run_A02_guidance.sh         # loops guidance scale values
+│   ├── run_A03_steps.sh            # loops sampling step values
+│   ├── run_A04_scheduler.sh        # loops schedulers
+│   ├── run_A07_negative.sh         # negative prompt comparison
+│   └── setup_env.sh                # environment setup
 ├── outputs/                        # checkpoints + generated images (not in git)
 ├── results/                        # metrics CSVs + plots (in git)
 ├── requirements.txt
@@ -109,63 +122,21 @@ All commands must be run from the `final_project/` directory.
 ### Option A — Conda (recommended)
 
 ```bash
-# create environment with Python 3.10
 conda create --name t2i python=3.10 -y
-
-# activate
 conda activate t2i
-
-# install dependencies
 pip install -r requirements.txt
 ```
 
-To activate in future sessions:
-```bash
-conda activate t2i
-```
-
-### Option B — venv (if conda is not available)
+### Option B — venv
 
 ```bash
-# create virtual environment
 python3 -m venv t2i
-
-# activate (Mac/Linux)
-source t2i/bin/activate
-
-# activate (Windows)
-t2i\Scripts\activate
-
-# install dependencies
+source t2i/bin/activate        # Mac/Linux
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-To activate in future sessions:
-```bash
-source t2i/bin/activate
-```
-
-### Option C — HPC (Quartz cluster)
-
-```bash
-# load GPU-optimized Python module
-module load python/gpu/3.10.10
-
-# create venv
-python3 -m venv t2i
-source t2i/bin/activate
-
-# install dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# add to ~/.bashrc so it loads automatically on login
-echo "module load python/gpu/3.10.10" >> ~/.bashrc
-echo "source ~/final_project/t2i/bin/activate" >> ~/.bashrc
-```
-
-### Verify GPU is available
+### Verify GPU
 
 ```bash
 python -c "import torch; print('GPU:', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None')"
@@ -179,44 +150,22 @@ python -c "import torch; print('GPU:', torch.cuda.is_available(), torch.cuda.get
 
 ```bash
 cd data/raw
-
-# flower images (~330MB)
 wget https://www.robots.ox.ac.uk/~vgg/data/flowers/102/102flowers.tgz
 tar -xzf 102flowers.tgz
-
-# official train/val/test split
 wget https://www.robots.ox.ac.uk/~vgg/data/flowers/102/setid.mat
-
-# species labels (1–102 per image)
 curl -L -O https://www.robots.ox.ac.uk/~vgg/data/flowers/102/imagelabels.mat
-
 cd ../..
 ```
 
-After download `data/raw/` should contain:
-```
-data/raw/
-├── jpg/              ← 8,189 flower images
-├── setid.mat         ← official train/val/test split IDs
-└── imagelabels.mat   ← species label per image
-```
-
 ### Step 2 — Generate captions with BLIP
-
-This runs BLIP on all 8,189 images and saves one `.txt` caption per image.
-Takes ~10 minutes on a GPU, ~2–3 hours on CPU.
 
 ```bash
 python src/data/generate_captions.py
 ```
 
-Output: `data/raw/captions/*.txt`
+Runs BLIP on all 8,189 images (~10 min on GPU). Resumable — skips already-captioned images.
 
-The script is **resumable** — if interrupted, re-run and it skips already-captioned images.
-
-### Step 3 — Prepare the dataset
-
-Resizes all images to 512×512, writes `metadata.jsonl`, and organises images into train/val/test subdirectories.
+### Step 3 — Prepare dataset
 
 ```bash
 python src/data/prepare_dataset.py
@@ -224,19 +173,13 @@ python src/data/prepare_dataset.py
 
 Output:
 ```
-data/processed/
-├── images/
-│   ├── train/     ← ~1,020 images  (Oxford official: 10 per species × 102 species)
-│   ├── val/       ← ~1,020 images  (Oxford official: 10 per species × 102 species)
-│   └── test/      ← ~6,149 images  (used as real images for FID — largest split)
-└── metadata.jsonl ← one JSON object per image
-data/splits/
-├── train.txt
-├── val.txt
-└── test.txt
+data/processed/images/
+├── train/     ← ~1,020 images  (Oxford official split)
+├── val/       ← ~1,020 images
+└── test/      ← ~6,149 images  (used as real images for FID)
 ```
 
-> Note: Oxford-102 uses an unconventional split where the **test set is the largest** (~6,149 images). Training uses only ~1,020 images. This is the standard benchmark split used in published papers.
+> Note: Oxford-102 uses an unconventional split where the **test set is the largest**. This is the standard benchmark split used in published papers.
 
 ---
 
@@ -248,47 +191,30 @@ data/splits/
 python src/train/train_lora.py --config configs/train_lora_r16.yaml
 ```
 
-**What happens:**
-1. Loads SD v1.5 from Hugging Face (downloads ~5GB on first run)
-2. Attaches LoRA adapters to U-Net attention layers (~1.6M trainable params)
-3. Trains for 2,000 steps with MSE noise-prediction loss
-4. Saves checkpoints every 500 steps to `outputs/checkpoints/main_lora_r16/`
+Saves checkpoints to `outputs/checkpoints/main_lora_r16/` every 500 steps.
 
-**Expected output:**
-```
-Training on: cuda
-trainable params: 1,622,016 || all params: 859,520,964 || trainable%: 0.19
-Training: 100%|████████| 2000/2000 [2:30:00]
-Checkpoint saved: outputs/checkpoints/main_lora_r16/step_500
-Checkpoint saved: outputs/checkpoints/main_lora_r16/step_1000
-Checkpoint saved: outputs/checkpoints/main_lora_r16/step_1500
-Checkpoint saved: outputs/checkpoints/main_lora_r16/step_2000
-Training complete. Final weights: outputs/checkpoints/main_lora_r16/final
-```
+**Key hyperparameters:**
 
-**Key training hyperparameters** (from `configs/base.yaml`):
+| Parameter | Value |
+|---|---|
+| LoRA rank / alpha | 16 / 16 |
+| Learning rate | 1e-4 |
+| Steps | 2,000 |
+| Effective batch size | 4 (batch 1 × grad accum 4) |
+| Mixed precision | fp16 |
 
-| Parameter | Value | Why |
-|---|---|---|
-| LoRA rank | 16 | Balance between capacity and parameter count |
-| Learning rate | 1e-4 | Standard for LoRA fine-tuning |
-| Steps | 2,000 | Enough to adapt without overfitting |
-| Batch size | 1 + grad accum 4 | Fits 16GB GPU, effective batch = 4 |
-| Mixed precision | fp16 | Halves GPU memory |
-
-### Training additional LoRA ranks (for A05 ablation)
+### A05 extra LoRA ranks
 
 ```bash
-# rank 4
-python src/train/train_lora.py --config configs/ablations/A05_lora_rank.yaml
-# edit A05_lora_rank.yaml: set lora_rank: 4, run again for rank 8 and 32
+python src/train/train_lora.py --config configs/ablations/A05_lora_rank8.yaml
+python src/train/train_lora.py --config configs/ablations/A05_lora_rank32.yaml
 ```
 
 ---
 
 ## 6. Inference / Image Generation
 
-### Generate baseline images (no LoRA — pretrained SD v1.5 only)
+### Baseline (pretrained SD v1.5, no LoRA)
 
 ```bash
 python src/generate/generate_images.py \
@@ -296,7 +222,7 @@ python src/generate/generate_images.py \
     --out_dir outputs/images/baseline
 ```
 
-### Generate images with fine-tuned LoRA
+### Fine-tuned (with LoRA)
 
 ```bash
 python src/generate/generate_images.py \
@@ -305,112 +231,72 @@ python src/generate/generate_images.py \
     --out_dir outputs/images/lora_r16
 ```
 
-**What it generates:**
-- 200 prompts × 5 seeds = **1,000 images** per run
-- Saved as `s{seed:02d}_p{prompt_idx:04d}.png`
-- Resumable — skips already-generated images
-
-**Generation is also resumable.** If interrupted, re-run the same command and it picks up where it left off.
-
-### Generate from a specific checkpoint (for A06 ablation)
-
-```bash
-python src/generate/generate_images.py \
-    --config configs/base.yaml \
-    --lora_path outputs/checkpoints/main_lora_r16/step_500 \
-    --out_dir outputs/images/A06_step500
-```
+Generates 200 prompts × 5 seeds = **1,000 images**. Resumable.
 
 ---
 
 ## 7. Evaluation
 
-All evaluation scripts compare a folder of generated images against the fixed 200 test prompts or real test images.
-
-### FID + KID (image quality vs real flowers)
+### FID + KID
 
 ```bash
 python src/evaluate/fid_kid.py \
     --generated outputs/images/lora_r16 \
-    --real data/processed/images/test
+    --real data/processed/images/test \
+    --run_name A01_lora_r16
 ```
 
-Lower is better. FID < 30 is good for this dataset.
-
-### CLIP Score (prompt-image alignment)
+### CLIP Score
 
 ```bash
 python src/evaluate/clip_score.py \
     --images outputs/images/lora_r16 \
-    --prompts data/prompts/test_prompts.txt
+    --prompts data/prompts/test_prompts.txt \
+    --run_name A01_lora_r16
 ```
 
-Higher is better. Scores typically range from 20–35 for SD v1.5.
-
-### Timing (speed)
+### Timing
 
 ```bash
 python src/evaluate/timing.py \
     --model_id runwayml/stable-diffusion-v1-5 \
     --lora_path outputs/checkpoints/main_lora_r16/final \
-    --n_images 50
-```
-
-### Evaluate baseline (no LoRA)
-
-```bash
-python src/evaluate/fid_kid.py \
-    --generated outputs/images/baseline \
-    --real data/processed/images/test
-
-python src/evaluate/clip_score.py \
-    --images outputs/images/baseline \
-    --prompts data/prompts/test_prompts.txt
+    --n_images 50 \
+    --num_inference_steps 30
 ```
 
 ---
 
 ## 8. Running Ablations
 
-Each ablation runs end-to-end: generate images → compute all metrics → save one CSV row to `results/metrics/`.
-
-### Run a single ablation
+### Run all ablations with one command
 
 ```bash
-# A02: guidance scale
-python scripts/run_ablation.py --config configs/ablations/A02_guidance_scale.yaml
+nohup bash scripts/run_all_ablations.sh 4 > outputs/logs/ablations.log 2>&1 &
+```
 
-# A01: with LoRA weights
-python scripts/run_ablation.py \
-    --config configs/ablations/A01_baseline_vs_lora.yaml \
-    --lora_path outputs/checkpoints/main_lora_r16/final
+Skips any ablation that already has results in `results/metrics/`. Check progress:
+
+```bash
+tail -f outputs/logs/ablations.log
 ```
 
 ### Ablation guide
 
-| ID | Requires retraining? | Config change | Run command |
-|---|---|---|---|
-| A01 | No | None — run twice (with/without lora_path) | See above |
-| A02 | No | Edit `guidance_scale` (1,3,5,7.5,10,15) | `run_ablation.py --config configs/ablations/A02_guidance_scale.yaml` |
-| A03 | No | Edit `num_inference_steps` (10,20,30,50,100) | `run_ablation.py --config configs/ablations/A03_sampling_steps.yaml` |
-| A04 | No | Edit `scheduler` in A04 config (`ddim`, `euler`, `dpm_solver_pp`, `pndm`) + edit `num_inference_steps` | `run_ablation.py --config configs/ablations/A04_scheduler.yaml` |
-| A05 | Yes (3 extra runs) | Edit `lora_rank` (4,8,32) + retrain | `train_lora.py` then `run_ablation.py` |
-| A06 | No | Pass different checkpoint as `lora_path` | `run_ablation.py --lora_path outputs/checkpoints/.../step_500` |
-| A07 | Yes (optional) | Edit dataset size in prepare_dataset.py | Optional |
-| A08 | Yes (optional) | Use human captions if available | Optional |
-| A09 | No | Edit `negative_prompt` in A09 config | `run_ablation.py --config configs/ablations/A09_negative_prompt.yaml` |
-| A10 | No | Skipped — video out of scope | — |
-| A11 | No | Edit `model.base` to SDXL or FLUX | `run_ablation.py --config configs/ablations/A11_architectures.yaml` |
+| ID | What it tests | Needs retraining? |
+|---|---|---|
+| A01 | Pretrained SD v1.5 vs fine-tuned LoRA | No |
+| A02 | Guidance scale: 1, 3, 5, 7.5, 10, 15 | No |
+| A03 | Sampling steps: 10, 20, 30, 50, 100 | No |
+| A04 | Scheduler: DDIM, Euler, DPM-Solver++, PNDM at 10 and 30 steps | No |
+| A05 | LoRA rank: 4, 8, 16, 32 | Yes (done) |
+| A06 | Training steps: checkpoints at 500, 1k, 2k | No |
+| A07 | Negative prompt: none vs "blurry, low quality..." | No |
+| A08 | Architecture: SD v1.5 vs SDXL zero-shot | No |
 
 ### Results
 
-Each ablation writes a row to `results/metrics/<run_name>.csv`:
-
-```
-run_name | fid   | kid    | clip_score | secs_per_image
-A02_cfg1   48.3    0.0821   22.1         3.2
-A02_cfg7.5 24.8    0.0412   31.6         3.2
-```
+Saved to `results/metrics/<run_name>.csv` with columns: `fid`, `kid`, `clip_score`, `secs_per_image`.
 
 ---
 
@@ -423,4 +309,4 @@ A02_cfg7.5 24.8    0.0412   31.6         3.2
 | CLIP Score | How well image matches its text prompt | Higher |
 | Seconds/image | Speed | Lower |
 
-All metrics are computed on **200 fixed prompts × 5 seeds = 1,000 images** to ensure fair comparison across all ablations.
+All metrics computed on **200 fixed prompts × 5 seeds = 1,000 images**.
