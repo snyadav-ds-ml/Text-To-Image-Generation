@@ -70,5 +70,5 @@ if __name__ == "__main__":
 
     if args.run_name:
         from src.utils.logging import log_metrics
-        log_metrics(args.run_name, {"clip_score": score}, log_dir="results/metrics")
+        log_metrics(args.run_name, {"clip_score": score}, log_dir="results/metrics", merge=True)
         print(f"Saved to results/metrics/{args.run_name}.csv")
