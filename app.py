@@ -27,9 +27,12 @@ DEVICE     = "cuda" if torch.cuda.is_available() else "cpu"
 # Load pipeline (cached so it only loads once)
 # ---------------------------------------------------------------------------
 @st.cache_resource
-def get_pipeline():
+def get_pipeline(use_lora=True):
+    lora = LORA_PATH if use_lora and os.path.exists(LORA_PATH) else None
+    if use_lora and lora is None:
+        st.warning("LoRA weights not found locally — using pretrained SD v1.5 baseline.")
     st.info("Loading model... this takes ~30 seconds on first run.")
-    pipe = load_pipeline(MODEL_ID, LORA_PATH, device=DEVICE)
+    pipe = load_pipeline(MODEL_ID, lora, device=DEVICE)
     return pipe
 
 # ---------------------------------------------------------------------------
@@ -66,11 +69,7 @@ if st.button("Generate", type="primary"):
         st.warning("Please enter a prompt.")
     else:
         with st.spinner("Generating image..."):
-            pipe = get_pipeline()
-
-            # swap lora on/off
-            lora_path = LORA_PATH if use_lora else None
-            pipe = load_pipeline(MODEL_ID, lora_path, device=DEVICE)
+            pipe = get_pipeline(use_lora)
 
             set_seed(seed)
             image = pipe(
