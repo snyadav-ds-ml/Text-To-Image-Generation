@@ -20,7 +20,8 @@ from src.utils.seed import set_seed
 # Config
 # ---------------------------------------------------------------------------
 MODEL_ID   = "runwayml/stable-diffusion-v1-5"
-LORA_PATH  = "outputs/checkpoints/main_lora_r16/final"
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+LORA_PATH  = os.path.join(PROJECT_DIR, "outputs/checkpoints/main_lora_r16/final")
 DEVICE     = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ---------------------------------------------------------------------------
