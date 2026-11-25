@@ -22,7 +22,14 @@ from src.utils.seed import set_seed
 MODEL_ID   = "runwayml/stable-diffusion-v1-5"
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 LORA_PATH  = os.path.join(PROJECT_DIR, "outputs/checkpoints/main_lora_r16/final")
-DEVICE     = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Auto-detect device: CUDA > MPS (Apple Silicon) > CPU
+if torch.cuda.is_available():
+    DEVICE = "cuda"
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+    DEVICE = "mps"
+else:
+    DEVICE = "cpu"
 
 # ---------------------------------------------------------------------------
 # Load pipeline (cached so it only loads once)

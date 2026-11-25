@@ -16,9 +16,12 @@ SCHEDULERS = {
 
 
 def load_pipeline(model_id, lora_path=None, device="cuda", scheduler="dpm_solver_pp"):
+    # Use float16 on GPU (fast), float32 on CPU (safe)
+    dtype = torch.float32 if device == "cpu" else torch.float16
+
     pipe = AutoPipelineForText2Image.from_pretrained(
         model_id,
-        torch_dtype=torch.float16,
+        torch_dtype=dtype,
         low_cpu_mem_usage=True,                                # works for SD v1.5, SDXL, and others
     )
 
