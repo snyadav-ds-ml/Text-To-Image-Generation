@@ -49,7 +49,7 @@
 
 \title{Text-to-Image Generation with Diffusion Models:\\
 {\large Part 1: Dataset Preparation \& Model Architecture}}
-\author{Person A}
+\author{Sneha Yadav}
 \date{\today}
 
 \begin{document}
@@ -57,14 +57,14 @@
 \maketitle
 
 \begin{abstract}
-This report details the foundational work for text-to-image generation using diffusion models. We describe the Oxford-102 Flowers dataset preparation, including image preprocessing, caption generation using BLIP, and the official train/val/test splits. We then present the architecture of Stable Diffusion v1.5, focusing on the VAE latent space compression and CLIP text encoding. This groundwork enables efficient fine-tuning on domain-specific data.
+This report details the foundational work for text-to-image generation using diffusion models. I will describe the Oxford-102 Flowers dataset preparation, including image preprocessing, caption generation using BLIP, and the official train/val/test splits. I will then present the architecture of Stable Diffusion v1.5, focusing on the VAE latent space compression and CLIP text encoding. This groundwork enables efficient fine-tuning on domain-specific data.
 \end{abstract}
 
 \section{Introduction}
 
 Generating images from text descriptions requires bridging the semantic gap between natural language and visual content. Recent advances in diffusion models~\cite{ho2020denoising,rombach2021high} have shown state-of-the-art results, but their application to domain-specific datasets (flowers) requires careful data preparation and architectural understanding.
 
-Our contribution focuses on:
+My contribution focuses on:
 \begin{enumerate}
     \item Dataset preparation and augmentation
     \item BLIP-based caption generation
@@ -102,7 +102,7 @@ The resolution of $512 \times 512$ matches the native resolution of SD v1.5 and 
 
 \subsection{Caption Generation with BLIP}
 
-We generate natural language captions for all 8,189 images using BLIP (Bootstrapping Language-Image Pre-training)~\cite{li2022blip}. BLIP provides semantic descriptions that serve as text conditioning for the diffusion model.
+I generate natural language captions for all 8,189 images using BLIP (Bootstrapping Language-Image Pre-training)~\cite{li2022blip}. BLIP provides semantic descriptions that serve as text conditioning for the diffusion model.
 
 \begin{table}[!htbp]
 \centering
@@ -282,7 +282,7 @@ Diffusion models define a fixed forward process $q$ that gradually adds Gaussian
 
 \subsection{Forward Process (Training)}
 
-For each training step, we:
+For each training step, I:
 \begin{enumerate}
     \item Sample a random timestep $t \sim \text{Uniform}\{1, \dots, T\}$ with $T = 1000$
     \item Add noise: $\mathbf{z}_t = \sqrt{\bar{\alpha}_t}\, \mathbf{z}_0 + \sqrt{1-\bar{\alpha}_t}\, \epsilon$, with $\epsilon \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$
@@ -415,7 +415,7 @@ Generated captions demonstrate semantic understanding:
 
 \section{Conclusion}
 
-We have prepared the Oxford-102 Flowers dataset with BLIP-generated captions and established the architectural foundations for text-to-image diffusion. The VAE compression ($48\times$) and CLIP encoding enable efficient fine-tuning while preserving semantic information. This groundwork enables the downstream contributions of training (Part 2) and evaluation (Part 3).
+I prepared the Oxford-102 Flowers dataset with BLIP-generated captions and established the architectural foundations for text-to-image diffusion. The VAE compression ($48\times$) and CLIP encoding enable efficient fine-tuning while preserving semantic information. This groundwork enables the downstream contributions of training (Part 2) and evaluation (Part 3).
 
 \begin{thebibliography}{99}
 
